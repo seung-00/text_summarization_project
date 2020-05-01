@@ -8,9 +8,11 @@ seq2seq 와 어텐션 메커니즘을 이용한 텍스트 요약
 
 ## 1) 데이터 수집(완료)
 
+* [cnbc_crawler](https://github.com/young-o/cnbc_crawler/blob/master/src/cns_crawler.py)
 
+  
 
-## 2) 데이터 정제(cleaning)
+## 2) 데이터 정제(완료)
 
 * 뉴스 corpus 로부터 noise 제거
 * 대략 3800개 우선 이걸로 ok
