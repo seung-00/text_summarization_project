@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import sys
+sys.path.append("/Users/seungyoungoh/workspace/text_summarization_project/code/preprocessing/preprocessing.py")
 from preprocessing import Preprocessor
 # from attention import AttentionLayer
 import tensorflow as tf

@@ -12,14 +12,16 @@ seq2seq 와 어텐션 메커니즘을 이용한 텍스트 요약
 
 ## 2) 데이터 정제(완료)
 
-* [cleansing](https://github.com/young-o/text_summarization_project/blob/master/code/cleansing/)
+* [cleansing](https://github.com/young-o/text_summarization_project/blob/master/진행상황/cleansing/)
 
 ## 3) 데이터 전처리(완료)
 
-* [preprocessing](https://github.com/young-o/text_summarization_project/blob/master/code/preprocessing)
+* [preprocessing](https://github.com/young-o/text_summarization_project/blob/master/진행상황/preprocessing)
 
-## 3) seq2seq 모델, attention 함수 설계 및 학습(진행 중)
+## 3) 모델 학습(진행 중)
 
+* [modeling](https://github.com/young-o/text_summarization_project/blob/master/진행상황/modeling)
+* seq2seq 모델, attention 기법 사용
 * [Bahdanau Attention](https://github.com/thushv89/attention_keras) 활용
 * 어텐션 함수 코드 작성 중 오류 발생하여 해결 중...
 
