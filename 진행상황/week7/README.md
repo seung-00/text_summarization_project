@@ -29,8 +29,11 @@ seq2seq 와 어텐션 메커니즘을 이용한 텍스트 요약
 
 * [preprocessing](https://github.com/young-o/text_summarization_project/blob/master/code/preprocessing.py)
 
-<img src="https://user-images.githubusercontent.com/46865281/80798403-459b6080-8bdf-11ea-8f79-8219c923908e.png" alt="image" style="zoom:25%;" />
-<img src="https://user-images.githubusercontent.com/46865281/80798409-48965100-8bdf-11ea-9662-8fd3c4ec9aeb.png" alt="image" style="zoom:25%;" />
+  
+
+<img src="https://user-images.githubusercontent.com/46865281/80798403-459b6080-8bdf-11ea-8f79-8219c923908e.png" width="400" height="400">
+
+<img src="https://user-images.githubusercontent.com/46865281/80798409-48965100-8bdf-11ea-9662-8fd3c4ec9aeb.png" width="400" height="400">
 
 
 
