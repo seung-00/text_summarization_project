@@ -1,14 +1,14 @@
 import numpy as np
 import pandas as pd
 from nltk.corpus import stopwords
-import tensorflow as tf
+import tensorflow
 from sklearn.model_selection import train_test_split
-from bs4 import BeautifulSoup 
 import re
-# import matplotlib.pyplot as plt
-keras = tf.keras
-from keras.preprocessing.text import Tokenizer 
-from keras.preprocessing.sequence import pad_sequences
+import matplotlib.pyplot as plt
+from tensorflow.keras.preprocessing.text import Tokenizer 
+from tensorflow.keras.preprocessing.sequence import pad_sequences
+from bs4 import BeautifulSoup
+
 
 class Preprocessor:
     def __init__(self, data):
@@ -51,14 +51,13 @@ class Preprocessor:
     def preprocess(self):
         """
         brief:
-        preprocess data for auto summarization with seq2seq
+        preprocess data and save as csv for auto summarization with seq2seq
         
         parameters:
         data(dataframe): dataframe with 2 level, source and summary data
 
         returns:
-        src_max_len, smry_max_len, src_vocab, smry_vocab(int)
-        X_train, X_test, y_train, y_test(numpy.ndarray)
+        void 
         """
 
         clean_src = []
@@ -72,14 +71,15 @@ class Preprocessor:
         self.data['src'] = clean_src
         self.data['smry'] = clean_smry
 
+
         # check null
         self.data.replace('', np.nan, inplace=True)
-        print(self.data.isnull().sum())
-        # src     0
-        # smry    0
+        print(self.data.isnull().sum())        # # src     0
+        #
+        #  smry    0
 
         # 모델 패딩을 위해 각 데이터 길이 분포 시각화
-        # read README
+        # read README˜
 
         src_max_len = 700
         smry_max_len = 100
@@ -91,97 +91,14 @@ class Preprocessor:
         # (3510, 2)
 
         self.data['smry'] = self.data['smry'].apply(lambda x : 'sostoken '+ x + ' eostoken')
-        self.data.head()
-
-        src = list(self.data['src'])
-        smry = list(self.data['smry'])
-
-        # partitiotn
-        X_train, X_test, y_train, y_test = train_test_split(src, smry, test_size=0.2, random_state=0, shuffle=True)
+        self.data.to_csv(path+"/data/cleaned_sample.csv", mode='w')
 
 
-        ### Integer Encoding
 
-        ## src data
-        src_tokenizer = Tokenizer()
-        # fit_on_texts(corpus) generates a set of words based on fequency
-        src_tokenizer.fit_on_texts(X_train)
-
-        threshold = 6
-        total_src_cnt = len(src_tokenizer.word_index)
-        rare_src_cnt = 0
-        total_src_freq = 0
-        rare_src_freq = 0 
-
-        for word, count in src_tokenizer.word_counts.items():
-            # items: (word, count)
-            total_src_freq = total_src_freq + count
-            if(count < threshold):
-                rare_src_cnt = rare_src_cnt + 1
-                rare_src_freq = rare_src_freq + count
-
-        print(f"set of vocabulary except rare word size: {total_src_cnt - rare_src_cnt}")
-        # set of vocabulary except rare word size: 10825
-        print(f"percentage of rare words frequency from total frequency: {(rare_src_freq / total_src_freq)*100}")
-        # percentage of rare words frequency from total frequency: 4.36439810550019
-
-        ## smry data
-        smry_tokenizer = Tokenizer()
-        smry_tokenizer.fit_on_texts(y_train)
-
-        threshold = 4
-        total_smry_cnt = len(smry_tokenizer.word_index)
-        rare_smry_cnt = 0
-        total_smry_freq = 0
-        rare_smry_freq = 0 
-
-        for word, count in smry_tokenizer.word_counts.items():
-            # items: (word, count)
-            total_smry_freq = total_smry_freq + count
-            if(count < threshold):
-                rare_smry_cnt = rare_smry_cnt + 1
-                rare_smry_freq = rare_smry_freq + count
-
-        print(f"set of vocabulary except rare word size: {total_smry_cnt - rare_smry_cnt}")
-        # set of vocabulary except rare word size: 4238
-        print(f"percentage of rare words frequency from total frequency: {(rare_smry_freq / total_smry_freq)*100}")
-        # percentage of rare words frequency from total frequency: 6.748086145780584
-
-        src_vocab = total_src_cnt - rare_src_cnt
-        # 상위 10825 단어만 사용
-        src_tokenizer = Tokenizer(num_words = src_vocab+1) 
-        src_tokenizer.fit_on_texts(X_train)
-
-        # text to int sequences
-        X_train = src_tokenizer.texts_to_sequences(X_train) 
-        X_test = src_tokenizer.texts_to_sequences(X_test)
-
-        smry_vocab = total_smry_cnt - rare_smry_cnt
-        # 상위 4238 단어만 사용
-        smry_tokenizer = Tokenizer(num_words = smry_vocab+1) 
-        smry_tokenizer.fit_on_texts(y_train)
-
-        y_train = smry_tokenizer.texts_to_sequences(y_train) 
-        y_test = smry_tokenizer.texts_to_sequences(y_test) 
-
-        # delete empty samples
-        drop_train = [index for index, sentence in enumerate(y_train) if len(sentence) == 2]
-        drop_test = [index for index, sentence in enumerate(y_test) if len(sentence) == 2]
-
-        X_train = np.delete(X_train, drop_train, axis=0)
-        y_train = np.delete(y_train, drop_train, axis=0)
-        X_test = np.delete(X_test, drop_test, axis=0)
-        y_test = np.delete(y_test, drop_test, axis=0)
-
-        # 2808 -> 2807
-        # 2808 -> 2807
-        # 702 -> 702
-        # 702 -> 702
-
-        ### padding
-        X_train = pad_sequences(X_train, maxlen = src_max_len, padding='post')
-        X_test = pad_sequences(X_test, maxlen = src_max_len, padding='post')
-        y_train = pad_sequences(y_train, maxlen = smry_max_len, padding='post')
-        y_test = pad_sequences(y_test, maxlen = smry_max_len, padding='post')
-        print(type(X_train))
-        return src_max_len, smry_max_len, src_vocab, smry_vocab, X_train, X_test, y_train, y_test
+if __name__ == "__main__":
+    path = "/Users/seungyoungoh/workspace/text_summarization_project"
+    data = pd.read_csv(path+"/data/sample.csv", error_bad_lines = False)
+    data = data.rename({'body':'src', 'key_point':'smry'}, axis = 'columns')[['src','smry']]
+    pr = Preprocessor(data)
+    pr.preprocess()
+    

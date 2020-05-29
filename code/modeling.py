@@ -1,23 +1,26 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import tensorflow as tf
-preprocessing = tf.keras.preprocessing
 from preprocessing import Preprocessor
-from attention import AttentionLayer
-import tensorflow as tf
-keras = tf.keras
-from keras.layers import Input, LSTM, Embedding, Dense, Concatenate
-from keras.models import Model
-from keras.callbacks import EarlyStopping, ModelCheckpoint
+import tensorflow
+from tensorflow.keras.layers import Input, LSTM, Embedding, Dense, Concatenate
+from tensorflow.keras.models import Model
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
+from tensorflow.keras.preprocessing.text import Tokenizer 
+from tensorflow.keras.preprocessing.sequence import pad_sequences
+from sklearn.model_selection import train_test_split
 
+src_max_len = 50
+smry_max_len = 8
+src = list(data['src'])
+smry = list(data['smry'])
 
-# if __name__ == "__main__":
-path = "/Users/seungyoungoh/workspace/text_summarization_project/"
-data = pd.read_csv(path+"/data/sample.csv", error_bad_lines = False)
-data = data.rename({'body':'src', 'key_point':'smry'}, axis = 'columns')[['src','smry']]
-pr = Preprocessor(data)
-src_max_len, smry_max_len, src_vocab, smry_vocab, X_train, X_test, y_train, y_test = pr.preprocess()
+# partitiotn
+X_train, X_test, y_train, y_test = train_test_split(src, smry, test_size=0.2, random_state=0, shuffle=True)
+X_train_word, X_test_word, y_train_word, y_test_word = X_train, X_test, y_train, y_test
+
+# 모델 패딩을 위해 각 데이터 길이 분포 시각화
+# read README˜
 
 ### modeling
 embedding_dim = 128
@@ -27,7 +30,8 @@ hidden_size = 256
 encoder_inputs = Input(shape=(src_max_len,))
 
 # 인코더의 임베딩 층
-enc_emb = Embedding(src_vocab, embedding_dim)(encoder_inputs)
+enc_emb_layer = Embedding(src_vocab, embedding_dim)
+enc_emb = enc_emb_layer(encoder_inputs)
 
 # 인코더의 LSTM 1
 encoder_lstm1 = LSTM(hidden_size, return_sequences=True, return_state=True ,dropout = 0.4, recurrent_dropout = 0.4)
@@ -45,7 +49,8 @@ encoder_outputs, state_h, state_c= encoder_lstm3(encoder_output2)
 decoder_inputs = Input(shape=(None,))
 
 # 디코더의 임베딩 층
-dec_emb = Embedding(smry_vocab, embedding_dim)(decoder_inputs)
+dec_emb_layer = Embedding(smry_vocab, embedding_dim)
+dec_emb = dec_emb_layer(decoder_inputs)
 
 # 디코더의 LSTM
 decoder_lstm = LSTM(hidden_size, return_sequences = True, return_state = True, dropout = 0.4, recurrent_dropout=0.2)
@@ -59,40 +64,13 @@ decoder_softmax_outputs = decoder_softmax_layer(decoder_outputs)
 model = Model([encoder_inputs, decoder_inputs], decoder_softmax_outputs)
 model.summary()
 
-model.compile(optimizer='rmsprop', loss='sparse_categorical_crossentropy')
+
+adam = optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False)
+
+model.compile(optimizer=adam, loss='sparse_categorical_crossentropy')
 
 es = EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience = 2)
-history = model.fit([X_train, y_train[:,:-1]], y_train.reshape(y_train.shape[0], y_train.shape[1], 1)[:,1:] \
-                  ,epochs=50, callbacks=[es], batch_size = 256, validation_data=([X_test, y_test[:,:-1]], \
-                  y_test.reshape(y_test.shape[0], y_test.shape[1], 1)[:,1:]))
 
-# https://github.com/fizyr/keras-retinanet/issues/637
-
-
-# # 어텐션 층(어텐션 함수)
-# attn_layer = AttentionLayer(name='attention_layer')
-# print(attn_layer([encoder_outputs, decoder_outputs]))
-# attn_out, attn_states = attn_layer([encoder_outputs, decoder_outputs])
-
-# # 어텐션의 결과와 디코더의 hidden state들을 연결
-# decoder_concat_input = Concatenate(axis = -1, name='concat_layer')([decoder_outputs, attn_out])
-
-# # 디코더의 출력층
-# decoder_softmax_layer = Dense(smry_vocab, activation='softmax')
-# decoder_softmax_outputs = decoder_softmax_layer(decoder_concat_input)
-
-# # 모델 정의
-# model = Model([encoder_inputs, decoder_inputs], decoder_softmax_outputs)
-# model.summary()
-
-# model.compile(optimizer='rmsprop', loss='sparse_categorical_crossentropy')
-
-# es = EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience = 2)
-# history = model.fit([X_train, y_train[:,:-1]], y_train.reshape(y_train.shape[0], y_train.shape[1], 1)[:,1:] \
-#                 ,epochs=50, callbacks=[es], batch_size = 256, validation_data=([X_test, y_test[:,:-1]], \
-#                 y_test.reshape(y_test.shape[0], y_test.shape[1], 1)[:,1:]))
-
-# plt.plot(history.history['loss'], label='train')
-# plt.plot(history.history['val_loss'], label='test')
-# plt.legend()
-# plt.show()
+hist = model.fit([X_train, y_train[:,:-1]], y_train.reshape(y_train.shape[0], y_train.shape[1], 1)[:,1:] \
+                ,epochs=50, callbacks=[es], batch_size = 256, validation_data=([X_test, y_test[:,:-1]], \
+                y_test.reshape(y_test.shape[0], y_test.shape[1], 1)[:,1:]))
