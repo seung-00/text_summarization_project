@@ -8,14 +8,10 @@ import re
 import matplotlib.pyplot as plt
 from tensorflow import keras
 
-import urllib.request
-urllib.request.urlretrieve("https://raw.githubusercontent.com/thushv89/attention_keras/master/src/layers/attention.py", filename="attention.py")
-from attention import AttentionLayer
 tf.debugging.set_log_device_placement(True)
 
 gpus = tf.config.experimental.list_physical_devices('GPU')
-tf.config.experimental.set_visible_devices(gpus[0], 'GPU')
-
+tf.config.experimental.set_visible_devices(gpus[3], 'GPU')
 
 
 data = pd.read_csv("/home/data/cleaned_sample.csv", error_bad_lines = False)
@@ -61,7 +57,6 @@ for word, count in src_tokenizer.word_counts.items():
 print(f"set of vocabulary except rare word size: {total_src_cnt - rare_src_cnt}")
 # set of vocabulary except rare word size: 10825
 print(f"percentage of rare words frequency from total frequency: {(rare_src_freq / total_src_freq)*100}")
-# percentage of rare words frequency from total frequency: 4.36439810550019
 
 ## smry data
 smry_tokenizer = keras.preprocessing.text.Tokenizer()
@@ -88,6 +83,8 @@ print(f"percentage of rare words frequency from total frequency: {(rare_smry_fre
 #src_vocab = total_src_cnt - rare_src_cnt
 src_vocab = 8000
 src_tokenizer = keras.preprocessing.text.Tokenizer(num_words = src_vocab)
+
+
 src_tokenizer.fit_on_texts(X_train)
 
 # text to int sequences
@@ -134,11 +131,7 @@ encoder_output1, state_h1, state_c1 = encoder_lstm1(enc_emb)
 
 # 인코더의 LSTM 2
 encoder_lstm2 = keras.layers.LSTM(hidden_size, return_sequences=True, return_state=True, dropout=0.4, recurrent_dropout=0.4)
-encoder_output2, state_h2, state_c2 = encoder_lstm2(encoder_output1)
-
-# 인코더의 LSTM 3
-encoder_lstm3 = keras.layers.LSTM(hidden_size, return_state=True, return_sequences=True, dropout=0.4, recurrent_dropout=0.4)
-encoder_outputs, state_h, state_c= encoder_lstm3(encoder_output2)
+encoder_outputs, state_h, state_c = encoder_lstm2(encoder_output1)
 
 
 # 디코더
@@ -152,31 +145,25 @@ dec_emb = dec_emb_layer(decoder_inputs)
 decoder_lstm = keras.layers.LSTM(hidden_size, return_sequences = True, return_state = True, dropout = 0.4, recurrent_dropout=0.2)
 decoder_outputs, _, _ = decoder_lstm(dec_emb, initial_state = [state_h, state_c])
 
-attn_layer = AttentionLayer(name='attention_layer')
-attn_out, attn_states = attn_layer([encoder_outputs, decoder_outputs])
-
-
-# 어텐션의 결과와 디코더의 hidden state들을 연결
-decoder_concat_input = keras.layers.Concatenate(axis = -1, name='concat_layer')([decoder_outputs, attn_out])
 
 # 디코더의 출력층
 decoder_softmax_layer = keras.layers.Dense(smry_vocab, activation='softmax')
-decoder_softmax_outputs = decoder_softmax_layer(decoder_concat_input)
+decoder_softmax_outputs = decoder_softmax_layer(decoder_outputs)
 
+# 모델 정의
 model = keras.models.Model([encoder_inputs, decoder_inputs], decoder_softmax_outputs)
 print(model.summary())
+
 
 adam = keras.optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False)
 
 model.compile(optimizer=adam, loss='sparse_categorical_crossentropy')
 
-"""
 es = keras.callbacks.EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience = 2)
 
 hist = model.fit([X_train, y_train[:,:-1]], y_train.reshape(y_train.shape[0], y_train.shape[1], 1)[:,1:] \
                   ,epochs=50, callbacks=[es], batch_size = 256, validation_data=([X_test, y_test[:,:-1]], \
                   y_test.reshape(y_test.shape[0], y_test.shape[1], 1)[:,1:]))
-"""
 
 # encoder model
 encoder_model = tf.keras.models.Model(inputs=encoder_inputs, outputs= [encoder_outputs, state_h, state_c])
@@ -197,21 +184,18 @@ dec_emb2= dec_emb_layer(decoder_inputs)
 decoder_outputs2, state_h, state_c = decoder_lstm(dec_emb2, initial_state= [decoder_input_state_h, decoder_input_state_c])
 decoder_output_states = [state_h, state_c]
 
-# 어텐션 함수
-attn_out_inf, attn_states_inf = attn_layer([decoder_hidden_state_input, decoder_outputs2])
-
-decoder_inf_concat = tf.keras.layers.Concatenate(axis=-1, name='concat')([decoder_outputs2, attn_out_inf])
 
 # 디코더의 출력층
-decoder_outputs2 = decoder_softmax_layer(decoder_inf_concat)
+decoder_outputs2 = decoder_softmax_layer(decoder_outputs2)
+
 
 # decoder model
 decoder_model = tf.keras.models.Model(
     [decoder_inputs] + [decoder_hidden_state_input, decoder_input_state_h, decoder_input_state_c],
     [decoder_outputs2] + decoder_output_states)
 
-print(encoder_model.summary())
-print(decoder_model.summary())
+
 
 encoder_model.save('encoder2.h5')
 decoder_model.save('decoder2.h5')
+
